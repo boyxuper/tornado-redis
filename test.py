@@ -6,10 +6,10 @@ __date__ = '2015/4/1 11:03'
 
 
 from tornado import ioloop, gen, web
-from tornado_redis import TornadoRedis
+from tornado_redis import StrictTornadoRedis
 
 
-client = TornadoRedis()
+client = StrictTornadoRedis()
 
 
 class IndexHandler(web.RequestHandler):

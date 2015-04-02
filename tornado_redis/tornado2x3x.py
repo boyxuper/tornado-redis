@@ -7,11 +7,10 @@ __date__ = '2015/4/1 10:46'
 
 import functools
 
-from redis import StrictRedis
 from tornado import gen, ioloop
 
 
-class TornadoRedis(StrictRedis):
+class TornadoExecutor(object):
     def execute_command(self, *args, **options):
         ioloop_obj = ioloop.IOLoop.instance()
         pool = self.connection_pool
