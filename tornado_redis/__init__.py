@@ -15,11 +15,13 @@ else:
 
 
 class StrictTornadoRedis(TornadoExecutor, redis.StrictRedis):
-    pass
+    def __init__(self, *args, **kwargs):
+        redis.StrictRedis.__init__(self, *args, **kwargs)
 
 
 class TornadoRedis(TornadoExecutor, redis.Redis):
-    pass
+    def __init__(self, *args, **kwargs):
+        redis.Redis.__init__(self, *args, **kwargs)
 
 del version_info, TornadoExecutor
 

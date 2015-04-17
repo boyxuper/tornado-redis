@@ -5,6 +5,8 @@ __author__ = 'johnxu'
 __date__ = '2015/4/1 10:47'
 
 
+import time
+
 from tornado import gen, concurrent, ioloop
 
 
@@ -34,7 +36,12 @@ class TornadoExecutor(object):
                 lambda fd, event: read_future.set_result(event),
                 ioloop.IOLoop.READ | ioloop.IOLoop.ERROR)
 
+            _timeout = None
+            if conn.socket_timeout:
+                _timeout = ioloop_obj.add_timeout(time.time() + conn.socket_timeout)
+
             yield read_future
+            ioloop_obj.remove_timeout(_timeout)
             ioloop_obj.remove_handler(conn_fd)
             result = self.parse_response(conn, command_name, **options)
         finally:

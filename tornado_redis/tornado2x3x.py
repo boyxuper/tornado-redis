@@ -5,7 +5,7 @@ __author__ = 'johnxu'
 __date__ = '2015/4/1 10:46'
 
 
-import functools
+import time
 
 from tornado import gen, ioloop
 
@@ -29,14 +29,23 @@ class TornadoExecutor(object):
         @gen.engine
         def _task(callback):
             try:
+                wait_callback = yield gen.Callback(conn)
                 conn_fd = conn._sock.fileno()
-                handler = functools.partial(
-                    lambda fd, event, continue_fn: continue_fn(event),
-                    continue_fn=(yield gen.Callback(conn)))
-                ioloop_obj.add_handler(conn_fd, handler, ioloop.IOLoop.READ | ioloop.IOLoop.ERROR)
+
+                ioloop_obj.add_handler(
+                    conn_fd, lambda fd, event: wait_callback(event),
+                    ioloop.IOLoop.READ | ioloop.IOLoop.ERROR)
+
+                _timeout = False
+                if conn.socket_timeout:
+                    _timeout = ioloop_obj.add_handler(
+                        time.time() + conn.socket_timeout, wait_callback)
 
                 yield gen.Wait(conn)
+
                 ioloop_obj.remove_handler(conn_fd)
+                if _timeout:
+                    ioloop_obj.remove_timeout(_timeout)
 
                 result = self.parse_response(conn, command_name, **options)
                 callback(result)
