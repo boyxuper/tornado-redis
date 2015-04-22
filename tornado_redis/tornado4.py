@@ -7,6 +7,7 @@ __date__ = '2015/4/1 10:47'
 
 import time
 
+import redis
 from tornado import gen, concurrent, ioloop
 
 
@@ -38,11 +39,18 @@ class TornadoExecutor(object):
 
             _timeout = None
             if conn.socket_timeout:
-                _timeout = ioloop_obj.add_timeout(time.time() + conn.socket_timeout)
+                _timeout = ioloop_obj.add_timeout(
+                    time.time() + conn.socket_timeout,
+                    lambda: read_future.set_result(False))
 
-            yield read_future
-            ioloop_obj.remove_timeout(_timeout)
+            ready = yield read_future
+            if ready is False:
+                raise redis.TimeoutError("Timeout while waiting socket to be ready for read.")
+
+            if _timeout:
+                ioloop_obj.remove_timeout(_timeout)
             ioloop_obj.remove_handler(conn_fd)
+
             result = self.parse_response(conn, command_name, **options)
         finally:
             pool.release(conn)
